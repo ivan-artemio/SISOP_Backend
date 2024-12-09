@@ -1,0 +1,39 @@
+stages:
+  - pull
+  - build
+  - deploy
+
+pull_code:
+  stage: pull
+  before_script:
+    - echo "Build code - before..."
+    - "which sshpass || (apt-get update -y && apt-get install sshpass -y)"
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -t ${SERVER_HOST} >> ~/.ssh/known_hosts
+  script:
+    - echo "Build code - process..."
+    - sshpass -p "${SERVER_PASSWORD}" ssh ${SERVER_USER}@${SERVER_HOST} "cd /opt/projects/sisop-backend-java-springboot && git checkout dev && git pull && exit"
+  only:
+    - dev
+
+build_code:
+  stage: build
+  before_script:
+    - echo "build code - before..."
+  script:
+    - echo "Build code - process..."
+    - echo "MVN Package - process..."
+    - sshpass -p "${SERVER_PASSWORD}" ssh ${SERVER_USER}@${SERVER_HOST} "cd /opt/projects/sisop-backend-java-springboot && mvn clean package && exit"
+  only:
+    - dev
+
+deploy_code:
+  stage: deploy
+  before_script:
+    - echo "deploy code - before..."
+  script:
+    - echo "deploy code - process..."
+    - echo "deploy Package - process..."
+    - sshpass -p "${SERVER_PASSWORD}" ssh ${SERVER_USER}@${SERVER_HOST} " cd /opt/tomcat/apache-tomcat-10.1.19/webapps && rm -r -f seso-1.1 && cp -r /opt/projects/sisop-backend-java-springboot/target/seso-1.1 /opt/tomcat/apache-tomcat-10.1.19/webapps/ && exit"
+  only:
+    - dev
